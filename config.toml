@@ -1,0 +1,5 @@
+[general]
+branch_name = "last-bid-setting"
+event = "push"
+command = "mkdir.bat"
+secret = ""
