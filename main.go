@@ -1,82 +1,77 @@
 package main
 
 import (
-	"github.com/github_deployer/src/logger"
-	"github.com/github_deployer/src/services"
-	"github.com/github_deployer/src/services/github"
-	"github.com/github_deployer/src/system"
-	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/github_deployer/src/application"
+	"github.com/takama/daemon"
 	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
-const logFileName = "log.txt"
+const (
+	name = "github_deployer"
+	description = "Daemon will execute command if github repository will updated"
+)
 
-func getFile() *os.File {
-	f, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		log.Fatal(err)
-	}
+var stdlog, errlog *log.Logger
 
-	return f
+type Service struct {
+	daemon.Daemon
 }
 
-func writeLog(logMessage string) {
-	f, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatal(err)
+// Manage by daemon commands or run the daemon
+func (service *Service) Manage() (string, error) {
+
+	usage := "Usage: cron_job install | remove | start | stop | status"
+	// If received any kind of command, do it
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+		switch command {
+		case "install":
+			return service.Install()
+		case "remove":
+			return service.Remove()
+		case "start":
+			return service.Start()
+		case "stop":
+			// No need to explicitly stop cron since job will be killed
+			return service.Stop()
+		case "status":
+			return service.Status()
+		default:
+			return usage, nil
+		}
 	}
+	// Set up channel on which to send signal notifications.
+	// We must use a buffered channel or risk missing the signal
+	// if we're not ready to receive when the signal is sent.
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 
-	defer f.Close()
+	app := &application.Application{}
+	app.Init()
 
-	wrt := io.MultiWriter(os.Stdout, f)
-	log.SetOutput(wrt)
-
-	log.Println(logMessage)
+	// Waiting for interrupt by system signal
+	killSignal := <-interrupt
+	stdlog.Println("Got signal:", killSignal)
+	return "Service exited", nil
 }
 
-var application = &system.Application{}
-
-
-
-func EchoHandler(w http.ResponseWriter, r *http.Request) {
-	var payload github.PushPayload
-
-	if err := r.ParseForm(); err != nil {
-		return
-	}
-
-	decoder :=json.NewDecoder(r.Body)
-	err := decoder.Decode(&payload)
-	if err != nil {
-		panic(err)
-	}
-
-	logMessage := logger.LogMessage{
-		Method: r.Method,
-		Host: r.Host,
-		UrlPath: r.URL.Path,
-		Query: r.URL.RawQuery,
-	}
-
-
-	go services.HandlePushPayload(application.Config, payload, logMessage)
-
-}
 
 func main(){
-	application.Init()
-	http.HandleFunc("/", EchoHandler)
-	fmt.Println("Github Deployer server on 9000")
-
-	err := http.ListenAndServe(":9000", nil)
+	srv, err := daemon.New(name, description)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		errlog.Println("Error: ", err)
+		os.Exit(1)
 	}
+	service := &Service{srv}
+	status, err := service.Manage()
+	if err != nil {
+		errlog.Println(status, "\nError: ", err)
+		os.Exit(1)
+	}
+	fmt.Println(status)
+
 }
