@@ -1,9 +1,10 @@
 package main
 
 import (
-	"githubDeployer/src/services"
-	"githubDeployer/src/services/github"
-	"githubDeployer/src/system"
+	"github.com/github_deployer/src/logger"
+	"github.com/github_deployer/src/services"
+	"github.com/github_deployer/src/services/github"
+	"github.com/github_deployer/src/system"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -57,16 +58,16 @@ func EchoHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	services.HandlePushPayload(application.Config, payload)
+	logMessage := logger.LogMessage{
+		Method: r.Method,
+		Host: r.Host,
+		UrlPath: r.URL.Path,
+		Query: r.URL.RawQuery,
+	}
 
-	logMessage := fmt.Sprintf("method: %v, host: %v, path: %v, query: %v, headers: %v, ",
-		r.Method,
-		r.Host,
-		r.URL.Path,
-		r.URL.RawQuery,
-		r.Header)
 
-	go writeLog(logMessage)
+	go services.HandlePushPayload(application.Config, payload, logMessage)
+
 }
 
 func main(){

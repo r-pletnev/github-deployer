@@ -1,22 +1,20 @@
 package system
 
 import (
-	"githubDeployer/src/config"
+	"github.com/github_deployer/src/config"
 )
 
-const configPatch = "config.toml"
+const configPatch = "config.json"
 
 type Application struct {
 	Config *config.Config
 }
 
 func (app *Application) Init() {
-	config.CreateConfigFile(configPatch)
-
 	mainConfig := &config.Config{}
+	mainConfig.CreateConfigFile(configPatch)
 
-	if err:= mainConfig.ReadConfig(configPatch); err != nil {
-		panic("can`t load config: " + err.Error())
-	}
+
+	mainConfig.ReadConfig(configPatch)
 	app.Config = mainConfig
 }

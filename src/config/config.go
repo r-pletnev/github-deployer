@@ -1,28 +1,21 @@
 package config
 
 import (
-	"github.com/pelletier/go-toml"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 )
 
-type GeneralConfig struct {
-	BranchName string `toml:"branch_name"`
-	Event string  `toml:"event"`
-	Command string `toml:"command"`
-	Secret string `toml:"secret"`
+type Repository struct {
+	Name string `json:"name"`
+	BranchName string `json:"branch_name"`
+	Event string  `json:"event"`
+	Command string `json:"command"`
+	Secret string `json:"secret"`
 }
 
 type Config struct {
-	Repository GeneralConfig `toml:"general"`
-}
-
-func (c *Config) ReadConfig(configPath string) error {
-	tree, err := toml.LoadFile(configPath)
-	if err != nil {
-		return err
-	}
-	return tree.Unmarshal(c)
+	Repositories []Repository `json:"repositories"`
 }
 
 func check(e error) {
@@ -31,12 +24,45 @@ func check(e error) {
 	}
 }
 
-func CreateConfigFile(patch string) {
-	if _, err := os.Stat(patch); !os.IsNotExist(err) {
+func (c *Config) ReadConfig(configPath string) {
+	body, err := ioutil.ReadFile(configPath)
+	check(err)
+
+	err = json.Unmarshal(body, c)
+	check(err)
+}
+
+
+func (c *Config) CreateConfigFile(path string) {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		return
 	}
 
-	body := []byte("[general]\nbranch_name = \"master\"\nevent = \"push\"\ncommand = \"\"\nsecret = \"\"\n")
-	err := ioutil.WriteFile(patch, body, 0655)
+	exampleRepository := Repository{
+		"Repository Name",
+		"master",
+		"push",
+		"./command.sh",
+		"",
+	}
+
+	c.Repositories = append(c.Repositories, exampleRepository)
+
+	body, err := json.MarshalIndent(c, "", "  ")
+	check(err)
+	err = ioutil.WriteFile(path, body, 0655)
 	check(err)
 }
+
+func (c *Config) GetRepository(repositoryName string) *Repository {
+	for _, repo := range c.Repositories {
+		if repo.Name == repositoryName {
+			return &repo
+		}
+	}
+
+	return nil
+}
+
+
+
