@@ -1,12 +1,12 @@
-package system
+package application
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/github_deployer/src/config"
-	"github.com/github_deployer/src/logger"
-	"github.com/github_deployer/src/services"
-	"github.com/github_deployer/src/services/github"
+	"github.com/zeroed88/github-deployer/src/config"
+	"github.com/zeroed88/github-deployer/src/logger"
+	"github.com/zeroed88/github-deployer/src/services"
+	"github.com/zeroed88/github-deployer/src/services/github"
 	"log"
 	"net/http"
 )

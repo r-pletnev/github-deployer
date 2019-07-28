@@ -1,0 +1,14 @@
+[Unit]
+Description=github.com web-hook listener and deployer
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+#ExecStart=<path-to-executabe>
+#WorkingDirectory=<path-to-folder-with-executable
+ExecStart=/home/roman/github_deployer/deployer
+WorkingDirectory=/home/roman/github_deployer
+
+[Install]
+WantedBy=multi-user.target

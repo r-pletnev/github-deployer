@@ -2,9 +2,9 @@ package services
 
 import (
 	"fmt"
-	"github.com/github_deployer/src/config"
-	"github.com/github_deployer/src/logger"
-	github2 "github.com/github_deployer/src/services/github"
+	"github.com/zeroed88/github-deployer/src/config"
+	"github.com/zeroed88/github-deployer/src/logger"
+	github2 "github.com/zeroed88/github-deployer/src/services/github"
 	"os/exec"
 	"runtime"
 )
